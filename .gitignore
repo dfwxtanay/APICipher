@@ -1,6 +1,10 @@
 venv/
+node_modules/
 __pycache__/
 *.pyc
-.env
 .DS_Store
+.env
 *.db
+*.db.bak
+*.bak
+reports/newman-results.json

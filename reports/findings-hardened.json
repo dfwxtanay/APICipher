@@ -1,0 +1,34 @@
+{
+  "scan_id": "APICIPHER-20260823-115817",
+  "timestamp": "2026-08-23T11:58:17.145824+00:00",
+  "target": "APICipher Security Tests",
+  "summary": {
+    "assertions_total": 14,
+    "tests_passed": 14,
+    "vulnerabilities_found": 0,
+    "overall_risk": "NONE",
+    "severity_counts": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 0,
+      "LOW": 0
+    }
+  },
+  "passed_controls": [
+    "APC-001",
+    "APC-002",
+    "APC-003",
+    "APC-004",
+    "APC-005",
+    "APC-006",
+    "APC-007",
+    "APC-008",
+    "APC-009",
+    "APC-010",
+    "APC-011",
+    "APC-012",
+    "APC-013",
+    "APC-014"
+  ],
+  "findings": []
+}

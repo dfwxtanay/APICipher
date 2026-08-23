@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APICipher - APICipher Security Tests</title>
+<style>
+:root {
+  --paper:#fbfbfa; --ink:#16161a; --muted:#6f6f78; --faint:#9a9aa3;
+  --rule:#e2e2df; --rule-strong:#c9c9c4; --panel:#f4f4f1; --code:#f0f0ec;
+  --crit:#a81f24; --high:#b35a17; --med:#8a6d0b; --low:#2f6f4a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:#111114; --ink:#e8e8ea; --muted:#8f8f99; --faint:#63636d;
+    --rule:#26262b; --rule-strong:#35353c; --panel:#1a1a1e; --code:#0d0d10;
+    --crit:#e0575c; --high:#e0873f; --med:#cfae2e; --low:#5aa87b;
+  }
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font:14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.mono { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.wrap { max-width:1000px; margin:0 auto; padding:0 28px 90px; }
+
+/* masthead */
+.masthead {
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:24px; flex-wrap:wrap;
+  padding:34px 0 14px; border-bottom:2px solid var(--ink);
+}
+.brand {
+  font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:19px; font-weight:600; letter-spacing:.22em; text-transform:uppercase;
+}
+.brand em { font-style:normal; color:var(--crit); }
+.tagline { color:var(--muted); font-size:12px; letter-spacing:.02em; }
+.meta { display:flex; gap:26px; font-size:11px; }
+.meta div { display:flex; flex-direction:column; gap:3px; }
+.meta dt {
+  color:var(--faint); text-transform:uppercase; letter-spacing:.12em; font-size:9.5px;
+}
+.meta dd { margin:0; font-family:ui-monospace, Menlo, monospace; font-size:11.5px; }
+
+/* verdict */
+.verdict { display:flex; align-items:flex-end; gap:44px; flex-wrap:wrap;
+           padding:26px 0 20px; border-bottom:1px solid var(--rule); }
+.verdict-label { font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+                 color:var(--faint); margin-bottom:5px; }
+.verdict-value { font-size:34px; font-weight:600; letter-spacing:-.015em; line-height:1; }
+.stats { display:flex; gap:34px; margin-left:auto; }
+.stat b { display:block; font-size:23px; font-weight:600; line-height:1.15;
+          font-family:ui-monospace, Menlo, monospace; }
+.stat span { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+
+/* distribution */
+.dist { padding:18px 0 20px; border-bottom:1px solid var(--rule); }
+.bar { display:flex; height:7px; overflow:hidden; margin-bottom:11px; }
+.bar i { display:block; }
+.bar i + i { margin-left:2px; }
+.legend { display:flex; gap:22px; flex-wrap:wrap; font-size:11.5px; }
+.legend span { display:flex; align-items:center; gap:7px; color:var(--muted); }
+.legend b { width:8px; height:8px; display:inline-block; }
+.legend em { font-style:normal; color:var(--ink); font-family:ui-monospace, Menlo, monospace; }
+
+.sect { display:flex; align-items:center; gap:12px; margin:34px 0 12px; }
+.sect h2 { font-size:10.5px; letter-spacing:.16em; text-transform:uppercase;
+           color:var(--muted); margin:0; font-weight:600; }
+.sect hr { flex:1; border:0; border-top:1px solid var(--rule); }
+
+/* toolbar */
+.toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:2px; }
+.tab {
+  background:none; border:1px solid var(--rule-strong); color:var(--muted);
+  padding:5px 11px; font-size:11.5px; border-radius:2px; cursor:pointer;
+  font-family:inherit; letter-spacing:.03em;
+}
+.tab:hover { border-color:var(--ink); color:var(--ink); }
+.tab[aria-pressed="true"] { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.tab u { text-decoration:none; opacity:.6; margin-left:5px;
+         font-family:ui-monospace, Menlo, monospace; }
+.spacer { flex:1; }
+.search {
+  border:1px solid var(--rule-strong); background:transparent; color:var(--ink);
+  padding:5px 10px; font-size:11.5px; border-radius:2px; width:190px; font-family:inherit;
+}
+.search:focus { outline:none; border-color:var(--ink); }
+.linkish { background:none; border:0; color:var(--muted); font-size:11.5px;
+           cursor:pointer; text-decoration:underline; text-underline-offset:3px;
+           font-family:inherit; padding:5px 2px; }
+.linkish:hover { color:var(--ink); }
+
+/* findings table */
+table { width:100%; border-collapse:collapse; }
+thead th {
+  text-align:left; font-size:9.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--faint); font-weight:600; padding:11px 10px; border-bottom:1px solid var(--rule-strong);
+}
+thead th.num { text-align:right; }
+tbody.f { border-bottom:1px solid var(--rule); }
+tr.row { cursor:pointer; }
+tr.row:hover td { background:var(--panel); }
+tr.row td { padding:11px 10px; vertical-align:middle; }
+td.tick { width:14px; color:var(--faint); font-size:10px; padding-right:0; }
+.tick s { text-decoration:none; display:inline-block; transition:transform .12s ease; }
+tbody.f.open .tick s { transform:rotate(90deg); }
+td.id { width:78px; white-space:nowrap; font-family:ui-monospace, Menlo, monospace;
+        font-size:11.5px; color:var(--muted); }
+td.sev { width:104px; }
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:10px;
+        letter-spacing:.1em; font-weight:600; }
+.chip b { width:7px; height:7px; display:inline-block; }
+td.name { font-weight:500; }
+td.ep { color:var(--muted); font-family:ui-monospace, Menlo, monospace; font-size:11.5px; }
+td.score { width:96px; text-align:right; }
+.score-n { font-family:ui-monospace, Menlo, monospace; font-weight:600; font-size:13px; }
+.score-bar { display:block; height:2px; background:var(--rule); margin-top:5px; }
+.score-bar i { display:block; height:2px; }
+
+/* detail */
+tr.detail { display:none; }
+tbody.f.open tr.detail { display:table-row; }
+tr.detail > td { padding:4px 10px 26px 34px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+        gap:16px 26px; padding:14px 0 18px; border-bottom:1px solid var(--rule); }
+.grid dt { font-size:9.5px; letter-spacing:.12em; text-transform:uppercase;
+           color:var(--faint); margin-bottom:4px; }
+.grid dd { margin:0; font-size:12.5px; }
+h4 { font-size:9.5px; letter-spacing:.13em; text-transform:uppercase;
+     color:var(--faint); margin:20px 0 8px; font-weight:600; }
+.calc { font-size:12.5px; color:var(--muted); margin:0; }
+.calc b { color:var(--ink); font-family:ui-monospace, Menlo, monospace; }
+pre {
+  margin:0; padding:13px 15px; background:var(--code); border:1px solid var(--rule);
+  border-radius:2px; overflow-x:auto; font-size:11.5px; line-height:1.65;
+  font-family:ui-monospace, SFMono-Regular, Menlo, monospace; color:var(--ink);
+}
+pre .dim { color:var(--faint); }
+.assert { font-size:11.5px; color:var(--muted); margin:9px 0 0; }
+.assert code { color:var(--crit); font-family:ui-monospace, Menlo, monospace; }
+.fix { font-size:12.5px; line-height:1.65; margin:0; max-width:74ch; }
+
+/* passed + empty */
+.passed { display:flex; flex-wrap:wrap; gap:7px; }
+.passed span { font-family:ui-monospace, Menlo, monospace; font-size:11px;
+               border:1px solid var(--rule-strong); color:var(--muted);
+               padding:3px 8px; border-radius:2px; }
+.passed span::before { content:"\2713"; color:var(--low); margin-right:6px; }
+.empty { padding:44px 0; text-align:center; color:var(--muted); font-size:13px; }
+.empty strong { display:block; font-size:17px; color:var(--ink); margin-bottom:7px; font-weight:600; }
+.none { padding:26px 0; color:var(--faint); font-size:12.5px; }
+
+footer { margin-top:52px; padding-top:16px; border-top:1px solid var(--rule);
+         color:var(--faint); font-size:11px; display:flex; justify-content:space-between;
+         gap:16px; flex-wrap:wrap; }
+@media (max-width:720px) {
+  td.ep, thead th.ep { display:none; }
+  .stats { margin-left:0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <div class="brand">API<em>Cipher</em></div>
+      <div class="tagline">Automated API security assessment</div>
+    </div>
+    <dl class="meta">
+      <div><dt>Target</dt><dd>APICipher Security Tests</dd></div>
+      <div><dt>Scan</dt><dd>APICIPHER-20260823-121204</dd></div>
+      <div><dt>Generated</dt><dd>2026-08-23 12:12:04 UTC</dd></div>
+    </dl>
+  </header>
+
+  <section class="verdict">
+    <div>
+      <div class="verdict-label">Overall risk</div>
+      <div class="verdict-value" style="color:var(--crit)">CRITICAL</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>11</b><span>Findings</span></div>
+      <div class="stat"><b>3</b><span>Passed</span></div>
+      <div class="stat"><b>14</b><span>Controls</span></div>
+    </div>
+  </section>
+
+  <section class="dist"><div class="bar"><i style="background:var(--crit);width:18.1818%"></i><i style="background:var(--high);width:27.2727%"></i><i style="background:var(--med);width:27.2727%"></i><i style="background:var(--low);width:27.2727%"></i></div><div class="legend"><span><b style="background:var(--crit)"></b>Critical <em>2</em></span><span><b style="background:var(--high)"></b>High <em>3</em></span><span><b style="background:var(--med)"></b>Medium <em>3</em></span><span><b style="background:var(--low)"></b>Low <em>3</em></span></div></section>
+
+  <div class="sect"><h2>Findings</h2><hr></div>
+
+  <div class="toolbar">
+    <button class="tab" data-filter="ALL" aria-pressed="true">All <u>11</u></button><button class="tab" data-filter="CRITICAL" aria-pressed="false">Critical <u>2</u></button><button class="tab" data-filter="HIGH" aria-pressed="false">High <u>3</u></button><button class="tab" data-filter="MEDIUM" aria-pressed="false">Medium <u>3</u></button><button class="tab" data-filter="LOW" aria-pressed="false">Low <u>3</u></button>
+    <span class="spacer"></span>
+    <input id="q" class="search" type="search" placeholder="Filter findings" aria-label="Filter findings">
+    <button id="toggle-all" class="linkish" type="button">Expand all</button>
+  </div>
+
+  
+    <table>
+      <thead><tr>
+        <th></th><th>ID</th><th>Severity</th><th>Vulnerability</th>
+        <th class="ep">Endpoint</th><th class="num">Score</th>
+      </tr></thead>
+      
+    <tbody class="f" data-severity="CRITICAL" data-haystack="apc-004 broken authentication get /users must require authentication api2:2023 broken authentication broken_auth">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-004</td>
+        <td class="sev"><span class="chip" style="color:var(--crit)">
+          <b style="background:var(--crit)"></b>CRITICAL</span></td>
+        <td class="name">Broken Authentication</td>
+        <td class="ep">GET /users</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--crit)">10.0</span>
+          <span class="score-bar"><i style="background:var(--crit);
+            width:100%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API2:2023 Broken Authentication</dd></div>
+            <div><dt>CWE</dt><dd>CWE-287 Improper Authentication</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Must require authentication</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>5</b> &times; Impact
+            <b>5</b> &times; Exposure <b>5</b>
+            = 125/125 &rarr;
+            <b style="color:var(--crit)">10.0/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/users
+<span class="dim">&#8595;</span>
+HTTP 200
+[{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_user_a&quot;,&quot;email&quot;:&quot;[EMAIL_REDACTED]&quot;,&quot;id&quot;:7},{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_user_b&quot;,&quot;email&quot;:&quot;[EMAIL_REDACTED]&quot;,&quot;id&quot;:8},{&quot;role&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_admin&quot;,&quot;email&quot;:&quot;[
+<span class="dim">... truncated</span></pre>
+          <p class="assert">Assertion failed: <code>expected 200 to be one of [ 401, 403 ]</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Require a valid credential on every non-public endpoint by adding the authentication dependency. Issue short-lived tokens with an &#x27;exp&#x27; claim and reject expired ones.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="CRITICAL" data-haystack="apc-005 broken authentication get /users anonymous response must not contain password hashes api2:2023 broken authentication broken_auth">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-005</td>
+        <td class="sev"><span class="chip" style="color:var(--crit)">
+          <b style="background:var(--crit)"></b>CRITICAL</span></td>
+        <td class="name">Broken Authentication</td>
+        <td class="ep">GET /users</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--crit)">10.0</span>
+          <span class="score-bar"><i style="background:var(--crit);
+            width:100%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API2:2023 Broken Authentication</dd></div>
+            <div><dt>CWE</dt><dd>CWE-287 Improper Authentication</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Anonymous response must not contain password hashes</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>5</b> &times; Impact
+            <b>5</b> &times; Exposure <b>5</b>
+            = 125/125 &rarr;
+            <b style="color:var(--crit)">10.0/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/users
+<span class="dim">&#8595;</span>
+HTTP 200
+[{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_user_a&quot;,&quot;email&quot;:&quot;[EMAIL_REDACTED]&quot;,&quot;id&quot;:7},{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_user_b&quot;,&quot;email&quot;:&quot;[EMAIL_REDACTED]&quot;,&quot;id&quot;:8},{&quot;role&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_admin&quot;,&quot;email&quot;:&quot;[
+<span class="dim">... truncated</span></pre>
+          <p class="assert">Assertion failed: <code>expected &#x27;[{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id…&#x27; to not include &#x27;argon2&#x27;</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Require a valid credential on every non-public endpoint by adding the authentication dependency. Issue short-lived tokens with an &#x27;exp&#x27; claim and reject expired ones.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="HIGH" data-haystack="apc-001 broken object level authorization get /users/{user_id} must deny cross-user object access api1:2023 broken object level authorization bola">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-001</td>
+        <td class="sev"><span class="chip" style="color:var(--high)">
+          <b style="background:var(--high)"></b>HIGH</span></td>
+        <td class="name">Broken Object Level Authorization</td>
+        <td class="ep">GET /users/{user_id}</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--high)">8.0</span>
+          <span class="score-bar"><i style="background:var(--high);
+            width:80%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API1:2023 Broken Object Level Authorization</dd></div>
+            <div><dt>CWE</dt><dd>CWE-639 Authorization Bypass Through User-Controlled Key</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Must deny cross-user object access</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>5</b> &times; Impact
+            <b>5</b> &times; Exposure <b>4</b>
+            = 100/125 &rarr;
+            <b style="color:var(--high)">8.0/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/users/8
+<span class="dim">&#8595;</span>
+HTTP 200
+{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_user_b&quot;,&quot;email&quot;:&quot;[EMAIL_REDACTED]&quot;,&quot;id&quot;:8}</pre>
+          <p class="assert">Assertion failed: <code>expected 200 to be one of [ 403, 404 ]</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Verify object ownership on every request. After loading the resource, compare its owner id against the authenticated user id from the JWT and return 403 on mismatch. Do not rely on the client to send only its own ids.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="HIGH" data-haystack="apc-002 broken object level authorization get /transactions/{id} must deny access to another user&#x27;s transaction api1:2023 broken object level authorization bola">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-002</td>
+        <td class="sev"><span class="chip" style="color:var(--high)">
+          <b style="background:var(--high)"></b>HIGH</span></td>
+        <td class="name">Broken Object Level Authorization</td>
+        <td class="ep">GET /transactions/{id}</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--high)">8.0</span>
+          <span class="score-bar"><i style="background:var(--high);
+            width:80%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API1:2023 Broken Object Level Authorization</dd></div>
+            <div><dt>CWE</dt><dd>CWE-639 Authorization Bypass Through User-Controlled Key</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Must deny access to another user&#x27;s transaction</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>5</b> &times; Impact
+            <b>5</b> &times; Exposure <b>4</b>
+            = 100/125 &rarr;
+            <b style="color:var(--high)">8.0/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/transactions/13
+<span class="dim">&#8595;</span>
+HTTP 200
+{&quot;id&quot;:13,&quot;user_id&quot;:8,&quot;amount&quot;:9900.0,&quot;description&quot;:&quot;user_b CONFIDENTIAL salary&quot;}</pre>
+          <p class="assert">Assertion failed: <code>expected 200 to be one of [ 403, 404 ]</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Verify object ownership on every request. After loading the resource, compare its owner id against the authenticated user id from the JWT and return 403 on mismatch. Do not rely on the client to send only its own ids.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="HIGH" data-haystack="apc-003 broken object level authorization get /transactions/{id} must not leak another user&#x27;s transaction data api1:2023 broken object level authorization bola">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-003</td>
+        <td class="sev"><span class="chip" style="color:var(--high)">
+          <b style="background:var(--high)"></b>HIGH</span></td>
+        <td class="name">Broken Object Level Authorization</td>
+        <td class="ep">GET /transactions/{id}</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--high)">8.0</span>
+          <span class="score-bar"><i style="background:var(--high);
+            width:80%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API1:2023 Broken Object Level Authorization</dd></div>
+            <div><dt>CWE</dt><dd>CWE-639 Authorization Bypass Through User-Controlled Key</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Must not leak another user&#x27;s transaction data</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>5</b> &times; Impact
+            <b>5</b> &times; Exposure <b>4</b>
+            = 100/125 &rarr;
+            <b style="color:var(--high)">8.0/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/transactions/13
+<span class="dim">&#8595;</span>
+HTTP 200
+{&quot;id&quot;:13,&quot;user_id&quot;:8,&quot;amount&quot;:9900.0,&quot;description&quot;:&quot;user_b CONFIDENTIAL salary&quot;}</pre>
+          <p class="assert">Assertion failed: <code>expected &#x27;{&quot;id&quot;:13,&quot;user_id&quot;:8,&quot;amount&quot;:9900.0,…&#x27; to not include &#x27;CONFIDENTIAL&#x27;</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Verify object ownership on every request. After loading the resource, compare its owner id against the authenticated user id from the JWT and return 403 on mismatch. Do not rely on the client to send only its own ids.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="MEDIUM" data-haystack="apc-007 broken authentication post /login issued jwt must carry an exp claim api2:2023 broken authentication broken_auth">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-007</td>
+        <td class="sev"><span class="chip" style="color:var(--med)">
+          <b style="background:var(--med)"></b>MEDIUM</span></td>
+        <td class="name">Broken Authentication</td>
+        <td class="ep">POST /login</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--med)">6.0</span>
+          <span class="score-bar"><i style="background:var(--med);
+            width:60%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API2:2023 Broken Authentication</dd></div>
+            <div><dt>CWE</dt><dd>CWE-287 Improper Authentication</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Issued JWT must carry an exp claim</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>3</b> &times; Impact
+            <b>5</b> &times; Exposure <b>5</b>
+            = 75/125 &rarr;
+            <b style="color:var(--med)">6.0/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/health
+<span class="dim">&#8595;</span>
+HTTP 200
+{&quot;status&quot;:&quot;healthy&quot;,&quot;secure_mode&quot;:false}</pre>
+          <p class="assert">Assertion failed: <code>expected { user_id: 7 } to have property &#x27;exp&#x27;</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Require a valid credential on every non-public endpoint by adding the authentication dependency. Issue short-lived tokens with an &#x27;exp&#x27; claim and reject expired ones.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="MEDIUM" data-haystack="apc-010 missing rate limiting post /login must throttle repeated failed logins api4:2023 unrestricted resource consumption no_rate_limit">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-010</td>
+        <td class="sev"><span class="chip" style="color:var(--med)">
+          <b style="background:var(--med)"></b>MEDIUM</span></td>
+        <td class="name">Missing Rate Limiting</td>
+        <td class="ep">POST /login</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--med)">4.8</span>
+          <span class="score-bar"><i style="background:var(--med);
+            width:48%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API4:2023 Unrestricted Resource Consumption</dd></div>
+            <div><dt>CWE</dt><dd>CWE-307 Improper Restriction of Excessive Authentication Attempts</dd></div>
+            <div><dt>Method</dt><dd>POST</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Must throttle repeated failed logins</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>4</b> &times; Impact
+            <b>3</b> &times; Exposure <b>5</b>
+            = 60/125 &rarr;
+            <b style="color:var(--med)">4.8/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>POST http://127.0.0.1:8000/login
+<span class="dim">&#8595;</span>
+HTTP 401
+{&quot;detail&quot;:&quot;Invalid username or password&quot;}</pre>
+          <p class="assert">Assertion failed: <code>expected &#x27;false&#x27; to deeply equal &#x27;true&#x27;</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Throttle authentication endpoints per IP and per account. Return 429 once the threshold is exceeded and apply progressive backoff or lockout.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="MEDIUM" data-haystack="apc-011 sensitive data exposure get /admin/users admin view must not expose password hashes api3:2023 broken object property level authorization data_exposure">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-011</td>
+        <td class="sev"><span class="chip" style="color:var(--med)">
+          <b style="background:var(--med)"></b>MEDIUM</span></td>
+        <td class="name">Sensitive Data Exposure</td>
+        <td class="ep">GET /admin/users</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--med)">4.0</span>
+          <span class="score-bar"><i style="background:var(--med);
+            width:40%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API3:2023 Broken Object Property Level Authorization</dd></div>
+            <div><dt>CWE</dt><dd>CWE-200 Exposure of Sensitive Information</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Admin view must not expose password hashes</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>5</b> &times; Impact
+            <b>5</b> &times; Exposure <b>2</b>
+            = 50/125 &rarr;
+            <b style="color:var(--med)">4.0/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/admin/users
+<span class="dim">&#8595;</span>
+HTTP 200
+[{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_user_a&quot;,&quot;email&quot;:&quot;[EMAIL_REDACTED]&quot;,&quot;id&quot;:7},{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_user_b&quot;,&quot;email&quot;:&quot;[EMAIL_REDACTED]&quot;,&quot;id&quot;:8},{&quot;role&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;$argon2id$[REDACTED]&quot;,&quot;username&quot;:&quot;apc_admin&quot;,&quot;email&quot;:&quot;[
+<span class="dim">... truncated</span></pre>
+          <p class="assert">Assertion failed: <code>expected &#x27;[{&quot;role&quot;:&quot;user&quot;,&quot;password&quot;:&quot;$argon2id…&#x27; to not include &#x27;argon2&#x27;</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Never serialise ORM models directly. Define explicit response schemas that list only the fields a caller may see, so new columns cannot leak by default.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="LOW" data-haystack="apc-012 security misconfiguration get /docs interactive api docs must not be publicly exposed api8:2023 security misconfiguration misconfig">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-012</td>
+        <td class="sev"><span class="chip" style="color:var(--low)">
+          <b style="background:var(--low)"></b>LOW</span></td>
+        <td class="name">Security Misconfiguration</td>
+        <td class="ep">GET /docs</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--low)">2.4</span>
+          <span class="score-bar"><i style="background:var(--low);
+            width:24%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API8:2023 Security Misconfiguration</dd></div>
+            <div><dt>CWE</dt><dd>CWE-16 Configuration</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Interactive API docs must not be publicly exposed</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>3</b> &times; Impact
+            <b>2</b> &times; Exposure <b>5</b>
+            = 30/125 &rarr;
+            <b style="color:var(--low)">2.4/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/docs
+<span class="dim">&#8595;</span>
+HTTP 200
+
+    &lt;!DOCTYPE html&gt;
+    &lt;html&gt;
+    &lt;head&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+    &lt;link type=&quot;text/css&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css&quot;&gt;
+    &lt;link rel=&quot;shortcut icon&quot; href=&quot;https://fastapi.tiangolo.com/img/
+<span class="dim">... truncated</span></pre>
+          <p class="assert">Assertion failed: <code>expected 200 to be one of [ 401, 403, 404 ]</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Disable interactive API documentation in production and send hardening headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) via middleware.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="LOW" data-haystack="apc-013 security misconfiguration get / must send x-content-type-options header api8:2023 security misconfiguration misconfig">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-013</td>
+        <td class="sev"><span class="chip" style="color:var(--low)">
+          <b style="background:var(--low)"></b>LOW</span></td>
+        <td class="name">Security Misconfiguration</td>
+        <td class="ep">GET /</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--low)">2.4</span>
+          <span class="score-bar"><i style="background:var(--low);
+            width:24%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API8:2023 Security Misconfiguration</dd></div>
+            <div><dt>CWE</dt><dd>CWE-16 Configuration</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Must send X-Content-Type-Options header</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>3</b> &times; Impact
+            <b>2</b> &times; Exposure <b>5</b>
+            = 30/125 &rarr;
+            <b style="color:var(--low)">2.4/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/
+<span class="dim">&#8595;</span>
+HTTP 200
+{&quot;message&quot;:&quot;APICipher API is running&quot;,&quot;status&quot;:&quot;online&quot;}</pre>
+          <p class="assert">Assertion failed: <code>expected response to have header with key &#x27;X-Content-Type-Options&#x27;</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Disable interactive API documentation in production and send hardening headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) via middleware.</p>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="f" data-severity="LOW" data-haystack="apc-014 security misconfiguration get / must send x-frame-options header api8:2023 security misconfiguration misconfig">
+      <tr class="row">
+        <td class="tick"><s>&#9656;</s></td>
+        <td class="id">APC-014</td>
+        <td class="sev"><span class="chip" style="color:var(--low)">
+          <b style="background:var(--low)"></b>LOW</span></td>
+        <td class="name">Security Misconfiguration</td>
+        <td class="ep">GET /</td>
+        <td class="score">
+          <span class="score-n" style="color:var(--low)">2.4</span>
+          <span class="score-bar"><i style="background:var(--low);
+            width:24%"></i></span>
+        </td>
+      </tr>
+      <tr class="detail">
+        <td colspan="6">
+          <dl class="grid">
+            <div><dt>OWASP</dt><dd>API8:2023 Security Misconfiguration</dd></div>
+            <div><dt>CWE</dt><dd>CWE-16 Configuration</dd></div>
+            <div><dt>Method</dt><dd>GET</dd></div>
+            <div><dt>Status</dt><dd>OPEN</dd></div>
+            <div style="grid-column:1/-1"><dt>Expected behaviour</dt>
+              <dd>Must send X-Frame-Options header</dd></div>
+          </dl>
+
+          <h4>Risk calculation</h4>
+          <p class="calc">Likelihood <b>3</b> &times; Impact
+            <b>2</b> &times; Exposure <b>5</b>
+            = 30/125 &rarr;
+            <b style="color:var(--low)">2.4/10</b></p>
+
+          <h4>Evidence</h4>
+          <pre>GET http://127.0.0.1:8000/
+<span class="dim">&#8595;</span>
+HTTP 200
+{&quot;message&quot;:&quot;APICipher API is running&quot;,&quot;status&quot;:&quot;online&quot;}</pre>
+          <p class="assert">Assertion failed: <code>expected response to have header with key &#x27;X-Frame-Options&#x27;</code></p>
+
+          <h4>Remediation</h4>
+          <p class="fix">Disable interactive API documentation in production and send hardening headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) via middleware.</p>
+        </td>
+      </tr>
+    </tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none">No findings match this filter.</div>
+
+  <div class="sect"><h2>Controls passed</h2><hr></div>
+  <div class="passed"><span>APC-006</span><span>APC-008</span><span>APC-009</span></div>
+
+  <footer>
+    <span>Generated by APICipher - credential material redacted from evidence</span>
+    <span class="mono">APICIPHER-20260823-121204</span>
+  </footer>
+</div>
+<script>
+(function () {
+  var tbodies = Array.prototype.slice.call(document.querySelectorAll("tbody.f"));
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  var search = document.getElementById("q");
+  var toggleAll = document.getElementById("toggle-all");
+  var empty = document.getElementById("empty");
+  var filter = "ALL";
+
+  tbodies.forEach(function (tb) {
+    tb.querySelector("tr.row").addEventListener("click", function () {
+      tb.classList.toggle("open");
+    });
+  });
+
+  function apply() {
+    var q = (search.value || "").toLowerCase().trim();
+    var shown = 0;
+
+    tbodies.forEach(function (tb) {
+      var okSev = filter === "ALL" || tb.dataset.severity === filter;
+      var okText = !q || tb.dataset.haystack.indexOf(q) !== -1;
+      var show = okSev && okText;
+      tb.style.display = show ? "" : "none";
+      if (show) { shown++; }
+    });
+
+    empty.style.display = shown ? "none" : "";
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      tabs.forEach(function (t) { t.setAttribute("aria-pressed", "false"); });
+      tab.setAttribute("aria-pressed", "true");
+      filter = tab.dataset.filter;
+      apply();
+    });
+  });
+
+  search.addEventListener("input", apply);
+
+  toggleAll.addEventListener("click", function () {
+    var anyClosed = tbodies.some(function (tb) {
+      return tb.style.display !== "none" && !tb.classList.contains("open");
+    });
+    tbodies.forEach(function (tb) {
+      if (tb.style.display === "none") { return; }
+      tb.classList.toggle("open", anyClosed);
+    });
+    toggleAll.textContent = anyClosed ? "Collapse all" : "Expand all";
+  });
+})();
+</script>
+</body>
+</html>

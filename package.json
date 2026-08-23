@@ -1,0 +1,27 @@
+{
+  "name": "apicipher",
+  "version": "1.0.0",
+  "description": "A cybersecurity tool that tests APIs for common vulnerabilities, analyzes their risk, and provides a dashboard to track and prioritize security issues.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dfwxtanay/APICipher.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dfwxtanay/APICipher/issues"
+  },
+  "homepage": "https://github.com/dfwxtanay/APICipher#readme",
+  "devDependencies": {
+    "newman": "^6.2.2"
+  }
+}

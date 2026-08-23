@@ -1,0 +1,310 @@
+{
+  "scan_id": "APICIPHER-20260823-121204",
+  "timestamp": "2026-08-23T12:12:04.491803+00:00",
+  "target": "APICipher Security Tests",
+  "summary": {
+    "assertions_total": 14,
+    "tests_passed": 3,
+    "vulnerabilities_found": 11,
+    "overall_risk": "CRITICAL",
+    "severity_counts": {
+      "CRITICAL": 2,
+      "HIGH": 3,
+      "MEDIUM": 3,
+      "LOW": 3
+    }
+  },
+  "passed_controls": [
+    "APC-006",
+    "APC-008",
+    "APC-009"
+  ],
+  "findings": [
+    {
+      "id": "APC-004",
+      "vulnerability": "Broken Authentication",
+      "vuln_type": "BROKEN_AUTH",
+      "endpoint": "GET /users",
+      "method": "GET",
+      "description": "Must require authentication",
+      "severity": "CRITICAL",
+      "risk_score": 10.0,
+      "scoring": {
+        "likelihood": 5,
+        "impact": 5,
+        "exposure": 5
+      },
+      "owasp": "API2:2023 Broken Authentication",
+      "cwe": "CWE-287 Improper Authentication",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/users",
+        "status_code": 200,
+        "assertion_error": "expected 200 to be one of [ 401, 403 ]",
+        "response_body": "[{\"role\":\"user\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_user_a\",\"email\":\"[EMAIL_REDACTED]\",\"id\":7},{\"role\":\"user\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_user_b\",\"email\":\"[EMAIL_REDACTED]\",\"id\":8},{\"role\":\"admin\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_admin\",\"email\":\"[",
+        "response_truncated": true
+      },
+      "remediation": "Require a valid credential on every non-public endpoint by adding the authentication dependency. Issue short-lived tokens with an 'exp' claim and reject expired ones.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-005",
+      "vulnerability": "Broken Authentication",
+      "vuln_type": "BROKEN_AUTH",
+      "endpoint": "GET /users",
+      "method": "GET",
+      "description": "Anonymous response must not contain password hashes",
+      "severity": "CRITICAL",
+      "risk_score": 10.0,
+      "scoring": {
+        "likelihood": 5,
+        "impact": 5,
+        "exposure": 5
+      },
+      "owasp": "API2:2023 Broken Authentication",
+      "cwe": "CWE-287 Improper Authentication",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/users",
+        "status_code": 200,
+        "assertion_error": "expected '[{\"role\":\"user\",\"password\":\"$argon2id\u2026' to not include 'argon2'",
+        "response_body": "[{\"role\":\"user\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_user_a\",\"email\":\"[EMAIL_REDACTED]\",\"id\":7},{\"role\":\"user\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_user_b\",\"email\":\"[EMAIL_REDACTED]\",\"id\":8},{\"role\":\"admin\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_admin\",\"email\":\"[",
+        "response_truncated": true
+      },
+      "remediation": "Require a valid credential on every non-public endpoint by adding the authentication dependency. Issue short-lived tokens with an 'exp' claim and reject expired ones.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-001",
+      "vulnerability": "Broken Object Level Authorization",
+      "vuln_type": "BOLA",
+      "endpoint": "GET /users/{user_id}",
+      "method": "GET",
+      "description": "Must deny cross-user object access",
+      "severity": "HIGH",
+      "risk_score": 8.0,
+      "scoring": {
+        "likelihood": 5,
+        "impact": 5,
+        "exposure": 4
+      },
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "cwe": "CWE-639 Authorization Bypass Through User-Controlled Key",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/users/8",
+        "status_code": 200,
+        "assertion_error": "expected 200 to be one of [ 403, 404 ]",
+        "response_body": "{\"role\":\"user\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_user_b\",\"email\":\"[EMAIL_REDACTED]\",\"id\":8}",
+        "response_truncated": false
+      },
+      "remediation": "Verify object ownership on every request. After loading the resource, compare its owner id against the authenticated user id from the JWT and return 403 on mismatch. Do not rely on the client to send only its own ids.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-002",
+      "vulnerability": "Broken Object Level Authorization",
+      "vuln_type": "BOLA",
+      "endpoint": "GET /transactions/{id}",
+      "method": "GET",
+      "description": "Must deny access to another user's transaction",
+      "severity": "HIGH",
+      "risk_score": 8.0,
+      "scoring": {
+        "likelihood": 5,
+        "impact": 5,
+        "exposure": 4
+      },
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "cwe": "CWE-639 Authorization Bypass Through User-Controlled Key",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/transactions/13",
+        "status_code": 200,
+        "assertion_error": "expected 200 to be one of [ 403, 404 ]",
+        "response_body": "{\"id\":13,\"user_id\":8,\"amount\":9900.0,\"description\":\"user_b CONFIDENTIAL salary\"}",
+        "response_truncated": false
+      },
+      "remediation": "Verify object ownership on every request. After loading the resource, compare its owner id against the authenticated user id from the JWT and return 403 on mismatch. Do not rely on the client to send only its own ids.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-003",
+      "vulnerability": "Broken Object Level Authorization",
+      "vuln_type": "BOLA",
+      "endpoint": "GET /transactions/{id}",
+      "method": "GET",
+      "description": "Must not leak another user's transaction data",
+      "severity": "HIGH",
+      "risk_score": 8.0,
+      "scoring": {
+        "likelihood": 5,
+        "impact": 5,
+        "exposure": 4
+      },
+      "owasp": "API1:2023 Broken Object Level Authorization",
+      "cwe": "CWE-639 Authorization Bypass Through User-Controlled Key",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/transactions/13",
+        "status_code": 200,
+        "assertion_error": "expected '{\"id\":13,\"user_id\":8,\"amount\":9900.0,\u2026' to not include 'CONFIDENTIAL'",
+        "response_body": "{\"id\":13,\"user_id\":8,\"amount\":9900.0,\"description\":\"user_b CONFIDENTIAL salary\"}",
+        "response_truncated": false
+      },
+      "remediation": "Verify object ownership on every request. After loading the resource, compare its owner id against the authenticated user id from the JWT and return 403 on mismatch. Do not rely on the client to send only its own ids.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-007",
+      "vulnerability": "Broken Authentication",
+      "vuln_type": "BROKEN_AUTH",
+      "endpoint": "POST /login",
+      "method": "GET",
+      "description": "Issued JWT must carry an exp claim",
+      "severity": "MEDIUM",
+      "risk_score": 6.0,
+      "scoring": {
+        "likelihood": 3,
+        "impact": 5,
+        "exposure": 5
+      },
+      "owasp": "API2:2023 Broken Authentication",
+      "cwe": "CWE-287 Improper Authentication",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/health",
+        "status_code": 200,
+        "assertion_error": "expected { user_id: 7 } to have property 'exp'",
+        "response_body": "{\"status\":\"healthy\",\"secure_mode\":false}",
+        "response_truncated": false
+      },
+      "remediation": "Require a valid credential on every non-public endpoint by adding the authentication dependency. Issue short-lived tokens with an 'exp' claim and reject expired ones.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-010",
+      "vulnerability": "Missing Rate Limiting",
+      "vuln_type": "NO_RATE_LIMIT",
+      "endpoint": "POST /login",
+      "method": "POST",
+      "description": "Must throttle repeated failed logins",
+      "severity": "MEDIUM",
+      "risk_score": 4.8,
+      "scoring": {
+        "likelihood": 4,
+        "impact": 3,
+        "exposure": 5
+      },
+      "owasp": "API4:2023 Unrestricted Resource Consumption",
+      "cwe": "CWE-307 Improper Restriction of Excessive Authentication Attempts",
+      "evidence": {
+        "request": "POST http://127.0.0.1:8000/login",
+        "status_code": 401,
+        "assertion_error": "expected 'false' to deeply equal 'true'",
+        "response_body": "{\"detail\":\"Invalid username or password\"}",
+        "response_truncated": false
+      },
+      "remediation": "Throttle authentication endpoints per IP and per account. Return 429 once the threshold is exceeded and apply progressive backoff or lockout.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-011",
+      "vulnerability": "Sensitive Data Exposure",
+      "vuln_type": "DATA_EXPOSURE",
+      "endpoint": "GET /admin/users",
+      "method": "GET",
+      "description": "Admin view must not expose password hashes",
+      "severity": "MEDIUM",
+      "risk_score": 4.0,
+      "scoring": {
+        "likelihood": 5,
+        "impact": 5,
+        "exposure": 2
+      },
+      "owasp": "API3:2023 Broken Object Property Level Authorization",
+      "cwe": "CWE-200 Exposure of Sensitive Information",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/admin/users",
+        "status_code": 200,
+        "assertion_error": "expected '[{\"role\":\"user\",\"password\":\"$argon2id\u2026' to not include 'argon2'",
+        "response_body": "[{\"role\":\"user\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_user_a\",\"email\":\"[EMAIL_REDACTED]\",\"id\":7},{\"role\":\"user\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_user_b\",\"email\":\"[EMAIL_REDACTED]\",\"id\":8},{\"role\":\"admin\",\"password\":\"$argon2id$[REDACTED]\",\"username\":\"apc_admin\",\"email\":\"[",
+        "response_truncated": true
+      },
+      "remediation": "Never serialise ORM models directly. Define explicit response schemas that list only the fields a caller may see, so new columns cannot leak by default.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-012",
+      "vulnerability": "Security Misconfiguration",
+      "vuln_type": "MISCONFIG",
+      "endpoint": "GET /docs",
+      "method": "GET",
+      "description": "Interactive API docs must not be publicly exposed",
+      "severity": "LOW",
+      "risk_score": 2.4,
+      "scoring": {
+        "likelihood": 3,
+        "impact": 2,
+        "exposure": 5
+      },
+      "owasp": "API8:2023 Security Misconfiguration",
+      "cwe": "CWE-16 Configuration",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/docs",
+        "status_code": 200,
+        "assertion_error": "expected 200 to be one of [ 401, 403, 404 ]",
+        "response_body": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <link type=\"text/css\" rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css\">\n    <link rel=\"shortcut icon\" href=\"https://fastapi.tiangolo.com/img/",
+        "response_truncated": true
+      },
+      "remediation": "Disable interactive API documentation in production and send hardening headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) via middleware.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-013",
+      "vulnerability": "Security Misconfiguration",
+      "vuln_type": "MISCONFIG",
+      "endpoint": "GET /",
+      "method": "GET",
+      "description": "Must send X-Content-Type-Options header",
+      "severity": "LOW",
+      "risk_score": 2.4,
+      "scoring": {
+        "likelihood": 3,
+        "impact": 2,
+        "exposure": 5
+      },
+      "owasp": "API8:2023 Security Misconfiguration",
+      "cwe": "CWE-16 Configuration",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/",
+        "status_code": 200,
+        "assertion_error": "expected response to have header with key 'X-Content-Type-Options'",
+        "response_body": "{\"message\":\"APICipher API is running\",\"status\":\"online\"}",
+        "response_truncated": false
+      },
+      "remediation": "Disable interactive API documentation in production and send hardening headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) via middleware.",
+      "status": "OPEN"
+    },
+    {
+      "id": "APC-014",
+      "vulnerability": "Security Misconfiguration",
+      "vuln_type": "MISCONFIG",
+      "endpoint": "GET /",
+      "method": "GET",
+      "description": "Must send X-Frame-Options header",
+      "severity": "LOW",
+      "risk_score": 2.4,
+      "scoring": {
+        "likelihood": 3,
+        "impact": 2,
+        "exposure": 5
+      },
+      "owasp": "API8:2023 Security Misconfiguration",
+      "cwe": "CWE-16 Configuration",
+      "evidence": {
+        "request": "GET http://127.0.0.1:8000/",
+        "status_code": 200,
+        "assertion_error": "expected response to have header with key 'X-Frame-Options'",
+        "response_body": "{\"message\":\"APICipher API is running\",\"status\":\"online\"}",
+        "response_truncated": false
+      },
+      "remediation": "Disable interactive API documentation in production and send hardening headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) via middleware.",
+      "status": "OPEN"
+    }
+  ]
+}
